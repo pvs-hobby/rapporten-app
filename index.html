@@ -4,186 +4,304 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rapporten in 1-2-3</title>
-    <!-- Tailwind CSS & FontAwesome -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- SheetJS / XLSX Library voor Excel export -->
+    <!-- XLSX Library voor Excel export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { transform: scale(1.05); box-shadow: 0 0 0 16px rgba(239, 68, 68, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        :root {
+            --blue-light: #3b82f6;
+            --blue-dark: #1e3a8a;
+            --blue-gradient: linear-gradient(135deg, #2563eb, #1e3a8a);
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --status-mic: #ef4444;
+            --status-speak: #3b82f6;
+            --status-idle: #64748b;
         }
 
-        .recording-pulse {
-            animation: pulse-ring 1.5s infinite;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
 
-        .btn-blue-gradient {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e3a8a 100%);
-            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 16px;
         }
-        .btn-blue-gradient:active {
-            transform: scale(0.97);
+
+        header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: var(--blue-dark);
+            margin-bottom: 6px;
+        }
+
+        p.subtitle {
+            font-size: 1.1rem;
+            color: #475569;
+        }
+
+        .main-card {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 500px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .btn-start {
+            width: 100%;
+            padding: 24px 16px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            background: var(--blue-gradient);
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(30, 58, 138, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            touch-action: manipulation;
+        }
+
+        .btn-action {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background-color: #10b981;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            display: none;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .status-box {
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            background-color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: var(--status-idle);
+            flex-shrink: 0;
+        }
+
+        .status-dot.listening {
+            background-color: var(--status-mic);
+            animation: pulse 1.2s infinite alternate;
+        }
+
+        .status-dot.speaking {
+            background-color: var(--status-speak);
+            animation: pulse 1.2s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.85); opacity: 0.7; }
+            100% { transform: scale(1.15); opacity: 1; }
+        }
+
+        .status-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .display-area {
+            width: 100%;
+            min-height: 140px;
+            max-height: 280px;
+            overflow-y: auto;
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 1.1rem;
+            color: #1e293b;
+            background-color: #fafafa;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            text-align: left;
+        }
+
+        .info-label {
+            width: 100%;
+            font-size: 0.95rem;
+            color: #64748b;
+            text-align: left;
+            margin-bottom: -12px;
+        }
+
+        .logs {
+            width: 100%;
+            max-width: 500px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .log-item {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            text-align: left;
         }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between p-4 sm:p-6 select-none font-sans">
+<body>
 
-    <!-- Header Section -->
-    <header class="max-w-2xl w-full mx-auto flex justify-between items-center py-3 border-b border-slate-800">
-        <div class="flex items-center space-x-3">
-            <div class="btn-blue-gradient p-3 rounded-2xl">
-                <i class="fa-solid fa-microphone-lines text-2xl text-white"></i>
-            </div>
-            <div>
-                <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-blue-400">
-                    Rapporten in 1-2-3
-                </h1>
-                <p class="text-xs text-slate-400 font-medium">Handsfree Auto-Assistent</p>
-            </div>
-        </div>
-        <button onclick="resetAll()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center space-x-1.5 border border-slate-700">
-            <i class="fa-solid fa-rotate-right"></i>
-            <span>Reset</span>
-        </button>
+    <header>
+        <h1>Rapporten in 1-2-3</h1>
+        <p class="subtitle">Handsfree spraakgestuurde rapportages</p>
     </header>
 
-    <!-- Main Card Container -->
-    <main class="max-w-2xl w-full mx-auto my-auto py-4 flex flex-col items-center justify-center space-y-5">
+    <div class="main-card">
+        <button id="btnStart" class="btn-start">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="22"></line>
+            </svg>
+            START RAPPORT MAKEN
+        </button>
 
-        <!-- Status & Active Step Card -->
-        <div id="statusCard" class="w-full bg-slate-900 border-2 border-slate-800 rounded-3xl p-6 sm:p-8 text-center shadow-2xl transition-all">
-            
-            <div id="stepBadge" class="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-300 text-xs font-extrabold uppercase tracking-widest mb-3">
-                <i class="fa-solid fa-car"></i>
-                <span id="stepBadgeText">Klaar voor gebruik</span>
-            </div>
+        <button id="btnAction" class="btn-action">
+            ✅ KLAAR
+        </button>
 
-            <!-- Main Title Prompt -->
-            <h2 id="promptTitle" class="text-2xl sm:text-4xl font-black text-white leading-tight mb-2">
-                Druk op de blauwe knop om te starten
-            </h2>
-
-            <p id="promptSub" class="text-slate-400 text-sm sm:text-lg mb-4">
-                Spreek in of gebruik de grote touch-knoppen op je scherm.
-            </p>
-
-            <!-- Status indicator -->
-            <div id="statusIndicator" class="flex items-center justify-center space-x-2 my-2">
-                <span id="statusDot" class="w-4 h-4 rounded-full bg-slate-600"></span>
-                <span id="statusText" class="text-sm font-semibold text-slate-300">Status: Inactief</span>
-            </div>
-
-            <!-- Input & Transcript Box -->
-            <div id="transcriptBox" class="p-4 bg-slate-950 rounded-2xl border border-slate-800 text-left hidden space-y-3 mt-4">
-                <div class="flex justify-between items-center text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
-                    <span id="transcriptLabel"><i class="fa-solid fa-waveform mr-1.5 text-blue-400"></i>Gedicteerde Invoer:</span>
-                </div>
-                
-                <!-- Live Spoken Text Area -->
-                <div id="liveText" class="w-full bg-transparent text-lg sm:text-xl font-bold text-blue-200 outline-none resize-none border-none min-h-[100px] max-h-[250px] overflow-y-auto whitespace-pre-wrap">Druk op start...</div>
-            </div>
+        <div class="status-box">
+            <div id="statusDot" class="status-dot"></div>
+            <span id="statusText" class="status-text">Status: Klaar voor start</span>
         </div>
 
-        <!-- MAIN ACTION BUTTONS AREA -->
-        <div id="actionArea" class="w-full space-y-3">
-            
-            <!-- 1. START BUTTON -->
-            <button id="btnStart" onclick="startFlow()" class="btn-blue-gradient w-full py-8 sm:py-10 px-6 rounded-3xl text-white font-black text-2xl sm:text-4xl tracking-wide flex items-center justify-center space-x-4 cursor-pointer">
-                <i class="fa-solid fa-circle-play text-4xl sm:text-5xl"></i>
-                <span>START RAPPORT MAKEN</span>
-            </button>
+        <div class="info-label">Live tekst / Weergave:</div>
+        <div id="displayArea" class="display-area">Druk op de blauwe knop om te beginnen...</div>
+    </div>
 
-            <!-- 2. RECORD / FINISH BUTTONS -->
-            <div id="recordingControls" class="hidden space-y-3">
-                <button id="btnFinishReport" onclick="finishCurrentStep()" class="w-full py-7 px-6 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-2xl sm:text-3xl rounded-3xl shadow-xl flex items-center justify-center space-x-3">
-                    <i class="fa-solid fa-check-circle text-3xl"></i>
-                    <span id="btnFinishText">SLUIT AF (BEVESTIG)</span>
-                </button>
-            </div>
+    <div class="logs">
+        <h3>Gegenereerde Bestanden:</h3>
+        <div id="logContainer">Nog geen bestanden aangemaakt.</div>
+    </div>
 
-            <!-- 3. YES / NO BUTTONS -->
-            <div id="yesNoContainer" class="grid grid-cols-2 gap-4 hidden">
-                <button onclick="handleYesNo(true)" class="py-7 sm:py-9 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-black text-3xl sm:text-4xl rounded-3xl shadow-lg flex items-center justify-center space-x-3">
-                    <i class="fa-solid fa-thumbs-up"></i>
-                    <span>JA</span>
-                </button>
-                <button onclick="handleYesNo(false)" class="py-7 sm:py-9 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white font-black text-3xl sm:text-4xl rounded-3xl shadow-lg flex items-center justify-center space-x-3">
-                    <i class="fa-solid fa-thumbs-down"></i>
-                    <span>NEE</span>
-                </button>
-            </div>
-
-            <!-- 4. DOSSIER CONFIRM BUTTON -->
-            <button id="btnConfirmDossier" onclick="confirmDossier()" class="hidden w-full py-6 px-6 btn-blue-gradient text-white font-black text-xl sm:text-2xl rounded-2xl flex items-center justify-center space-x-3">
-                <span>BEVESTIG DOSSIER & NEXT</span>
-                <i class="fa-solid fa-arrow-right"></i>
-            </button>
-        </div>
-
-        <!-- GENERATED FILES LOG -->
-        <div id="filesLogSection" class="w-full bg-slate-900/90 rounded-2xl p-4 border border-slate-800 hidden">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center">
-                <i class="fa-solid fa-file-arrow-down text-blue-400 mr-2"></i> Gegenereerde Bestanden & Mail-Koppeling
-            </h3>
-            <div id="filesList" class="space-y-2"></div>
-        </div>
-
-    </main>
-
-    <!-- Footer -->
-    <footer class="max-w-2xl w-full mx-auto text-center py-2 border-t border-slate-900 text-xs text-slate-500">
-        Bestanden versturen naar: <span class="text-slate-300 font-semibold">paulvanginnekenmobile@gmail.com</span>
-    </footer>
-
-    <!-- App Logic Script -->
     <script>
-        const TARGET_EMAIL = "paulvanginnekenmobile@gmail.com";
-
-        const Steps = {
-            IDLE: 0,
-            DOSSIER: 1,
-            REPORT: 2,
-            ASK_EXCEL: 3,
-            EXCEL_DICTATION: 4,
-            ASK_AGAIN: 5,
-            DONE: 6
-        };
-
-        let currentStep = Steps.IDLE;
-        let dossierNumber = "";
-        let fullReportText = "";
-        let devicesReportText = "";
-        let speechRec = null;
+        let state = 'IDLE'; 
+        let dossierNumber = '';
+        let fullReportText = '';       
+        let rawDevicesText = '';
+        let recognition = null;
         let isListening = false;
+
+        const btnStart = document.getElementById('btnStart');
+        const btnAction = document.getElementById('btnAction');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const displayArea = document.getElementById('displayArea');
+        const logContainer = document.getElementById('logContainer');
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-        // UI Selectors
-        const btnStart = document.getElementById('btnStart');
-        const recordingControls = document.getElementById('recordingControls');
-        const btnFinishReport = document.getElementById('btnFinishReport');
-        const btnFinishText = document.getElementById('btnFinishText');
-        const yesNoContainer = document.getElementById('yesNoContainer');
-        const btnConfirmDossier = document.getElementById('btnConfirmDossier');
-        
-        const statusCard = document.getElementById('statusCard');
-        const stepBadgeText = document.getElementById('stepBadgeText');
-        const promptTitle = document.getElementById('promptTitle');
-        const promptSub = document.getElementById('promptSub');
-        const statusDot = document.getElementById('statusDot');
-        const statusText = document.getElementById('statusText');
-        const transcriptBox = document.getElementById('transcriptBox');
-        const liveText = document.getElementById('liveText');
-        const filesLogSection = document.getElementById('filesLogSection');
-        const filesList = document.getElementById('filesList');
+        if (!SpeechRecognition) {
+            alert('Spraakherkenning wordt niet ondersteund in deze browser. Gebruik Google Chrome.');
+        } else {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;     
+            recognition.interimResults = true; 
+            recognition.lang = 'nl-NL';
 
-        // Text-to-Speech Engine
+            recognition.onstart = () => {
+                isListening = true;
+                updateStatusIcon('listening');
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                if (state.startsWith('LISTENING_')) {
+                    try {
+                        recognition.start();
+                    } catch(e) {}
+                } else {
+                    updateStatusIcon('idle');
+                }
+            };
+
+            recognition.onresult = (event) => {
+                let currentSessionFinal = '';
+                let currentSessionInterim = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        currentSessionFinal += event.results[i][0].transcript + ' ';
+                    } else {
+                        currentSessionInterim += event.results[i][0].transcript;
+                    }
+                }
+
+                if (currentSessionFinal.trim() !== '') {
+                    if (state === 'LISTENING_REPORT') {
+                        fullReportText += ' ' + currentSessionFinal.trim();
+                    } else if (state === 'LISTENING_DEVICES') {
+                        rawDevicesText += ' ' + currentSessionFinal.trim();
+                    }
+                }
+
+                if (state === 'LISTENING_REPORT') {
+                    const fullLiveView = (fullReportText + ' ' + currentSessionInterim).trim();
+                    handleSpeechInput(fullLiveView.toLowerCase(), currentSessionFinal.trim().toLowerCase());
+                } else if (state === 'LISTENING_DEVICES') {
+                    const fullLiveView = (rawDevicesText + ' ' + currentSessionInterim).trim();
+                    handleSpeechInput(fullLiveView.toLowerCase(), currentSessionFinal.trim().toLowerCase());
+                } else {
+                    const fullLiveView = (currentSessionFinal + currentSessionInterim).trim();
+                    handleSpeechInput(fullLiveView.toLowerCase(), currentSessionFinal.trim().toLowerCase());
+                }
+            };
+        }
+
+        function unlockAudioHardware() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const buffer = audioCtx.createBuffer(1, 1, 22050);
+                const source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioCtx.destination);
+                source.start(0);
+            } catch(e) {}
+        }
+
         function speakPrompt(text, onComplete) {
             stopListening();
-            updateStatus('speaking', 'App spreekt...');
+            updateStatusIcon('speaking');
+            statusText.innerText = "App spreekt...";
 
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
@@ -192,7 +310,7 @@
                 utterance.rate = 0.95;
 
                 const voices = window.speechSynthesis.getVoices();
-                const nlVoice = voices.find(v => v.lang.toLowerCase().includes('nl'));
+                const nlVoice = voices.find(v => v.lang.includes('nl'));
                 if (nlVoice) utterance.voice = nlVoice;
 
                 utterance.onend = () => { if (onComplete) onComplete(); };
@@ -204,393 +322,242 @@
             }
         }
 
-        // Initialize Speech Recognition
-        function initSpeechRecognition() {
-            if (!SpeechRecognition) {
-                alert('Spraakherkenning wordt niet ondersteund in deze browser. Gebruik Google Chrome op Android/PC.');
-                return;
-            }
-
-            try {
-                speechRec = new SpeechRecognition();
-                speechRec.lang = 'nl-NL';
-                speechRec.continuous = true;
-                speechRec.interimResults = true;
-
-                speechRec.onstart = () => {
-                    isListening = true;
-                    updateStatus('listening', 'Microfoon actief...');
-                };
-
-                speechRec.onend = () => {
-                    isListening = false;
-                    if ([Steps.DOSSIER, Steps.REPORT, Steps.ASK_EXCEL, Steps.EXCEL_DICTATION, Steps.ASK_AGAIN].includes(currentStep)) {
-                        try { speechRec.start(); } catch(e) {}
-                    } else {
-                        updateStatus('idle', 'Inactief');
-                    }
-                };
-
-                speechRec.onresult = (event) => {
-                    let currentFinal = '';
-                    let currentInterim = '';
-
-                    for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        if (event.results[i].isFinal) {
-                            currentFinal += event.results[i][0].transcript + ' ';
-                        } else {
-                            currentInterim += event.results[i][0].transcript;
-                        }
-                    }
-
-                    if (currentStep === Steps.DOSSIER) {
-                        const recognizedText = (currentFinal || currentInterim).trim();
-                        if (recognizedText) {
-                            liveText.innerText = recognizedText;
-                            dossierNumber = recognizedText;
-                        }
-                    } else if (currentStep === Steps.REPORT) {
-                        if (currentFinal.trim()) {
-                            fullReportText += ' ' + currentFinal.trim();
-                        }
-                        liveText.innerText = (fullReportText + ' ' + currentInterim).trim();
-
-                        const combinedText = (fullReportText + ' ' + currentInterim).toLowerCase();
-                        if (combinedText.includes("einde rapport")) {
-                            fullReportText = fullReportText.replace(/einde rapport/gi, '').trim();
-                            finishCurrentStep();
-                        }
-                    } else if (currentStep === Steps.EXCEL_DICTATION) {
-                        if (currentFinal.trim()) {
-                            devicesReportText += ' ' + currentFinal.trim();
-                        }
-                        liveText.innerText = (devicesReportText + ' ' + currentInterim).trim();
-
-                        const combinedText = (devicesReportText + ' ' + currentInterim).toLowerCase();
-                        if (combinedText.includes("einde lijst") || combinedText.includes("einde toestellen")) {
-                            devicesReportText = devicesReportText.replace(/einde lijst|einde toestellen/gi, '').trim();
-                            finishCurrentStep();
-                        }
-                    } else if (currentStep === Steps.ASK_EXCEL) {
-                        const answer = (currentFinal || currentInterim).toLowerCase();
-                        if (answer.includes('ja') || answer.includes('wel') || answer.includes('graag')) {
-                            handleYesNo(true);
-                        } else if (answer.includes('nee') || answer.includes('neen') || answer.includes('niet')) {
-                            handleYesNo(false);
-                        }
-                    } else if (currentStep === Steps.ASK_AGAIN) {
-                        const answer = (currentFinal || currentInterim).toLowerCase();
-                        if (answer.includes('ja') || answer.includes('opnieuw')) {
-                            handleYesNo(true);
-                        } else if (answer.includes('nee') || answer.includes('stop')) {
-                            handleYesNo(false);
-                        }
-                    }
-                };
-            } catch(e) {
-                console.error("Speech Rec error:", e);
-            }
-        }
-
-        function startListening() {
-            if (speechRec && !isListening) {
-                try { speechRec.start(); } catch(e) {}
-            }
-        }
-
         function stopListening() {
-            if (speechRec && isListening) {
-                try { speechRec.stop(); } catch(e) {}
+            if (recognition && isListening) {
+                try { recognition.stop(); } catch(e) {}
             }
         }
 
-        function updateStatus(type, label) {
-            statusText.innerText = 'Status: ' + label;
-            statusDot.className = 'w-4 h-4 rounded-full ';
-            if (type === 'listening') {
-                statusDot.classList.add('bg-red-500', 'animate-pulse');
-                statusCard.classList.add('recording-pulse', 'border-red-500/60');
-            } else if (type === 'speaking') {
-                statusDot.classList.add('bg-blue-500', 'animate-pulse');
-                statusCard.classList.remove('recording-pulse', 'border-red-500/60');
-            } else {
-                statusDot.classList.add('bg-slate-600');
-                statusCard.classList.remove('recording-pulse', 'border-red-500/60');
+        function startListeningState() {
+            if (recognition && !isListening) {
+                try { recognition.start(); } catch(e) {}
             }
         }
 
-        // WORKFLOW FLOWS
-        function startFlow() {
-            btnStart.classList.add('hidden');
-            dossierNumber = "";
-            fullReportText = "";
-            devicesReportText = "";
-            liveText.innerText = "Spreek in...";
-            
-            initSpeechRecognition();
-            goToStep1Dossier();
+        function updateStatusIcon(type) {
+            statusDot.className = 'status-dot';
+            if (type === 'listening') statusDot.classList.add('listening');
+            else if (type === 'speaking') statusDot.classList.add('speaking');
         }
 
-        function goToStep1Dossier() {
-            currentStep = Steps.DOSSIER;
-            stepBadgeText.textContent = "Stap 1 - Dossier / Klant";
-            promptTitle.textContent = "Geef dossiernummer of naam klant";
-            promptSub.textContent = "Spreek in of klik op bevestigen wanneer klaar.";
-            
-            transcriptBox.classList.remove('hidden');
-            btnConfirmDossier.classList.remove('hidden');
-            recordingControls.classList.add('hidden');
-            yesNoContainer.classList.add('hidden');
+        btnStart.addEventListener('click', () => {
+            unlockAudioHardware();
+            startReportFlow();
+        });
 
+        btnAction.addEventListener('click', () => {
+            if (state === 'LISTENING_REPORT') {
+                finishReport();
+            } else if (state === 'LISTENING_EXCEL_PROMPT') {
+                handleSpeechInput('ja', 'ja');
+            } else if (state === 'LISTENING_DEVICES') {
+                finishExcelGeneration();
+            } else if (state === 'LISTENING_REPEAT') {
+                handleSpeechInput('nee', 'nee');
+            }
+        });
+
+        function startReportFlow() {
+            state = 'ASKING_DOSSIER';
+            fullReportText = '';
+            rawDevicesText = '';
+            dossierNumber = '';
+            btnAction.style.display = 'none';
+            displayArea.innerText = "Bezig met starten...";
+            
             speakPrompt("Geef dossiernummer of naam klant", () => {
-                startListening();
+                state = 'LISTENING_DOSSIER';
+                statusText.innerText = "Luisteren naar dossiernummer...";
+                displayArea.innerText = "Spreek nu het dossiernummer of de naam van de klant in...";
+                startListeningState();
             });
         }
 
-        function confirmDossier() {
-            stopListening();
-            if (!dossierNumber) {
-                dossierNumber = liveText.innerText.trim() || "Dossier_" + Math.floor(Math.random() * 1000);
-            }
-            goToStep2Report();
-        }
-
-        function goToStep2Report() {
-            currentStep = Steps.REPORT;
-            stepBadgeText.textContent = "Stap 2 - Dicteer Rapport (Word)";
-            promptTitle.textContent = "Dicteer me uw rapport";
-            promptSub.textContent = "Spreek af en sluit af met 'einde rapport' of klik op de groene knop.";
-
-            btnConfirmDossier.classList.add('hidden');
-            btnFinishText.textContent = "EINDE RAPPORT (WORD)";
-            recordingControls.classList.remove('hidden');
-            liveText.innerText = "[Dicteer hier het verslag voor Word...]";
-
-            speakPrompt("Dicteer me uw rapport en sluit af met de woorden einde rapport", () => {
-                startListening();
-            });
-        }
-
-        function finishCurrentStep() {
-            stopListening();
-            recordingControls.classList.add('hidden');
-
-            if (currentStep === Steps.REPORT) {
-                if (!fullReportText) {
-                    fullReportText = liveText.innerText;
+        function handleSpeechInput(liveText, finalSentence) {
+            if (state === 'LISTENING_DOSSIER') {
+                if (finalSentence && finalSentence.length > 1) {
+                    dossierNumber = finalSentence;
+                    displayArea.innerText = `Dossier/Klant: ${dossierNumber}\n\nStart rapport...`;
+                    
+                    state = 'ASKING_REPORT';
+                    speakPrompt("Dicteer me uw rapport en sluit af met de woorden einde rapport", () => {
+                        state = 'LISTENING_REPORT';
+                        statusText.innerText = "Luisteren naar rapport...";
+                        displayArea.innerText = `Dossier: ${dossierNumber}\n\n[Dicteer uw volledige rapport. Zeg 'einde rapport' als u klaar bent]`;
+                        btnAction.innerText = "✅ EINDE RAPPORT";
+                        btnAction.style.display = 'block';
+                        fullReportText = '';
+                        startListeningState();
+                    });
                 }
-                // Generate Word Document
-                generateWordDocument();
-                // Ask for Excel Devices Step
-                goToStep3AskExcel();
-            } else if (currentStep === Steps.EXCEL_DICTATION) {
-                if (!devicesReportText) {
-                    devicesReportText = liveText.innerText;
+            } else if (state === 'LISTENING_REPORT') {
+                displayArea.innerText = `Dossier: ${dossierNumber}\n\n${fullReportText}`;
+
+                if (liveText.includes('einde rapport') || finalSentence.includes('einde rapport')) {
+                    fullReportText = fullReportText.replace(/einde rapport/gi, '').trim();
+                    finishReport();
                 }
-                // Generate Excel Document
-                generateExcelDocument();
-                // Ask for another report
-                goToStep5AskAgain();
+            } else if (state === 'LISTENING_EXCEL_PROMPT') {
+                const answer = finalSentence || liveText;
+                if (answer.includes('ja') || answer.includes('wel') || answer.includes('graag')) {
+                    stopListening();
+                    promptForDevicesList();
+                } else if (answer.includes('nee') || answer.includes('neen') || answer.includes('niet')) {
+                    stopListening();
+                    displayArea.innerText += "\n\nGeen Excel-lijst gewenst.";
+                    askForAnotherReport();
+                }
+            } else if (state === 'LISTENING_DEVICES') {
+                displayArea.innerText = `Toestellen voor Excel:\n${rawDevicesText}`;
+
+                if (liveText.includes('einde lijst') || finalSentence.includes('einde lijst') || liveText.includes('einde rapport')) {
+                    rawDevicesText = rawDevicesText.replace(/einde lijst/gi, '').replace(/einde rapport/gi, '').trim();
+                    finishExcelGeneration();
+                }
+            } else if (state === 'LISTENING_REPEAT') {
+                const answer = finalSentence || liveText;
+                if (answer.includes('ja') || answer.includes('ja graag') || answer.includes('opnieuw')) {
+                    stopListening();
+                    startReportFlow();
+                } else if (answer.includes('nee') || answer.includes('neen') || answer.includes('stop')) {
+                    stopListening();
+                    state = 'IDLE';
+                    btnAction.style.display = 'none';
+                    statusText.innerText = "Status: Afgerond";
+                    speakPrompt("Rapportage is afgerond. Veilige rit gewenst.");
+                }
             }
         }
 
-        function goToStep3AskExcel() {
-            currentStep = Steps.ASK_EXCEL;
-            stepBadgeText.textContent = "Stap 3 - Excel Toestellenlijst";
-            promptTitle.textContent = "Wilt u nu de toestellen dicteren voor Excel?";
-            promptSub.textContent = "Antwoord met JA of NEE.";
+        function finishReport() {
+            stopListening();
+            btnAction.style.display = 'none';
+            if (!fullReportText) {
+                fullReportText = displayArea.innerText;
+            }
+            displayArea.innerText = `Dossier: ${dossierNumber}\n\n[Rapport Voltooid & Opgeslagen]:\n${fullReportText}`;
 
-            yesNoContainer.classList.remove('hidden');
+            generateWordFile();
 
+            state = 'ASKING_EXCEL_PROMPT';
             speakPrompt("Heeft u een excellijst nodig van alle technische toestellen?", () => {
-                startListening();
+                state = 'LISTENING_EXCEL_PROMPT';
+                statusText.innerText = "Luisteren naar 'ja' of 'nee'...";
+                btnAction.innerText = "Klik voor JA (Excel)";
+                btnAction.style.display = 'block';
+                startListeningState();
             });
         }
 
-        function handleYesNo(isYes) {
+        function promptForDevicesList() {
+            rawDevicesText = '';
+            state = 'ASKING_DEVICES';
+            speakPrompt("Spreek nu de toestellen in en sluit af met einde lijst", () => {
+                state = 'LISTENING_DEVICES';
+                statusText.innerText = "Luisteren naar toestellen...";
+                displayArea.innerText = "Spreek de toestellen in (zeg telkens 'komma' tussen de toestellen). Sluit af met 'einde lijst'.";
+                btnAction.innerText = "✅ EINDE LIJST";
+                btnAction.style.display = 'block';
+                startListeningState();
+            });
+        }
+
+        function finishExcelGeneration() {
             stopListening();
-            yesNoContainer.classList.add('hidden');
-
-            if (currentStep === Steps.ASK_EXCEL) {
-                if (isYes) {
-                    goToStep4ExcelDictation();
-                } else {
-                    goToStep5AskAgain();
-                }
-            } else if (currentStep === Steps.ASK_AGAIN) {
-                if (isYes) {
-                    startFlow();
-                } else {
-                    finishAllWorkflows();
-                }
-            }
+            btnAction.style.display = 'none';
+            generateExcelFile();
+            askForAnotherReport();
         }
 
-        function goToStep4ExcelDictation() {
-            currentStep = Steps.EXCEL_DICTATION;
-            stepBadgeText.textContent = "Stap 3B - Dicteer Toestellen (Excel)";
-            promptTitle.textContent = "Dicteer nu alle toestellen";
-            promptSub.textContent = "Spreek de toestellen in (bv. per zin of met het woord 'komma'). Zeg 'einde lijst' als u klaar bent.";
-
-            devicesReportText = "";
-            liveText.innerText = "[Dicteer hier alle toestellen/apparaten...]";
-            btnFinishText.textContent = "EINDE TOESTELLEN (EXCEL)";
-            recordingControls.classList.remove('hidden');
-
-            speakPrompt("Dicteer nu alle toestellen en sluit af met einde lijst", () => {
-                startListening();
-            });
-        }
-
-        function goToStep5AskAgain() {
-            currentStep = Steps.ASK_AGAIN;
-            stepBadgeText.textContent = "Afronding";
-            promptTitle.textContent = "Wil u nog een rapport dicteren?";
-            promptSub.textContent = "Druk op JA of NEE.";
-
-            yesNoContainer.classList.remove('hidden');
-
+        function askForAnotherReport() {
+            state = 'ASKING_REPEAT';
             speakPrompt("Wil u nog een rapport dicteren?", () => {
-                startListening();
+                state = 'LISTENING_REPEAT';
+                statusText.innerText = "Luisteren naar 'ja' of 'nee'...";
+                btnAction.innerText = "Nog een rapport (JA)";
+                btnAction.style.display = 'block';
+                startListeningState();
             });
         }
 
-        function finishAllWorkflows() {
-            currentStep = Steps.DONE;
-            stopListening();
-
-            stepBadgeText.textContent = "Afgerond";
-            promptTitle.textContent = "Rapportage voltooid!";
-            promptSub.textContent = "Alle bestanden zijn geëxporteerd en klaar voor e-mail.";
+        function generateWordFile() {
+            const fileName = `Rapport_${dossierNumber.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
             
-            yesNoContainer.classList.add('hidden');
-            btnStart.classList.remove('hidden');
-
-            speakPrompt("Rapportage is volledig afgerond. Veilige rit gewenst.");
-        }
-
-        // GENERATE WORD DOCUMENT (.doc)
-        function generateWordDocument() {
-            const safeDossier = (dossierNumber || 'Dossier').replace(/[^a-zA-Z0-9]/g, '_');
-            const fileName = `Rapport_${safeDossier}.doc`;
-            const timestamp = new Date().toLocaleString('nl-BE');
-
-            const wordContent = `
+            const htmlContent = `
                 <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-                <head><meta charset='utf-8'><title>Rapport - ${dossierNumber}</title>
+                <head><meta charset='utf-8'><title>Rapport</title>
                 <style>
-                    body { font-family: Arial, sans-serif; padding: 24px; line-height: 1.6; color: #0f172a; }
-                    h1 { color: #1e3a8a; border-bottom: 2px solid #1e3a8a; padding-bottom: 8px; }
-                    .meta { font-size: 14px; color: #475569; margin-bottom: 24px; }
-                    .box { background-color: #f8fafc; padding: 16px; border-left: 4px solid #2563eb; font-size: 15px; }
+                    body { font-family: Arial, sans-serif; margin: 40px; }
+                    h1 { color: #1e3a8a; font-size: 20pt; }
+                    .meta { font-size: 11pt; color: #555; margin-bottom: 20px; }
+                    .content { font-size: 12pt; line-height: 1.6; }
                 </style>
                 </head>
                 <body>
-                    <h1>TECHNISCH RAPPORT</h1>
+                    <h1>Technisch Rapport</h1>
                     <div class="meta">
                         <p><strong>Dossier / Klant:</strong> ${dossierNumber}</p>
-                        <p><strong>Datum:</strong> ${timestamp}</p>
+                        <p><strong>Datum:</strong> ${new Date().toLocaleDateString('nl-BE')} ${new Date().toLocaleTimeString('nl-BE')}</p>
                     </div>
-                    <h2>Gedicteerd Verslag:</h2>
-                    <div class="box">${fullReportText.replace(/\n/g, '<br/>')}</div>
+                    <hr/>
+                    <div class="content">
+                        <h2>Rapportverslag:</h2>
+                        <p>${fullReportText.replace(/\n/g, '<br/>')}</p>
+                    </div>
                 </body>
                 </html>
             `;
 
-            const blob = new Blob(['\ufeff' + wordContent], { type: 'application/msword;charset=utf-8' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            const blob = new Blob(['\ufeff' + htmlContent], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
 
-            // Mailto link
-            const mailSubject = encodeURIComponent(`Rapport Word: ${dossierNumber}`);
-            const mailBody = encodeURIComponent(`Beste,\n\nHierbij het rapport voor dossier: ${dossierNumber}.\n\nTekst:\n${fullReportText}`);
-            const mailUrl = `mailto:${TARGET_EMAIL}?subject=${mailSubject}&body=${mailBody}`;
-
-            addFileLogCard('Word (.doc)', fileName, mailUrl);
+            addLogItem(`📄 Word-bestand opgeslagen: <strong>${fileName}</strong> (Kijk in je <strong>Downloads-map</strong> van je telefoon).`);
         }
 
-        // GENERATE EXCEL DOCUMENT (.xlsx) - Direct placement in Column A line-by-line
-        function generateExcelDocument() {
-            // Strip initiële antwoordwoorden zoals "ja", "ja graag", "ok"
-            let cleanText = devicesReportText
-                .replace(/^(?:ja|ja graag|oké|oke|graag)\b/gi, '')
-                .trim();
+        function generateExcelFile() {
+            let cleanText = rawDevicesText.replace(/\bkomma\b/gi, ',');
 
-            // Opsplitsen op uitgesproken leestekens en bekende scheidingswoorden
-            const items = cleanText
-                .split(/(?:[,.!?;\n]+|\b(?:komma|punt|nieuwe regel|volgende|volgend toestel|en|ook)\b)/gi)
+            const rawList = cleanText
+                .split(/[,.]|\b(?:en|volgende|nieuwe regel)\b/gi)
                 .map(item => item.trim())
-                .filter(item => item.length > 1 && !['einde', 'lijst', 'toestellen', 'rapport', 'ja'].includes(item.toLowerCase()));
+                .filter(item => item.length > 1 && !['einde', 'lijst', 'rapport', 'ja', 'nee'].includes(item.toLowerCase()));
 
-            const rows = [["Technische Toestellen (Kolom A)"]];
+            const excelData = [["Technische Toestellen"]]; 
             
-            if (items.length > 0) {
-                items.forEach(dev => {
-                    const formatted = dev.charAt(0).toUpperCase() + dev.slice(1);
-                    rows.push([formatted]); // Elk item op een eigen rij in Kolom A
+            if (rawList.length > 0) {
+                rawList.forEach(device => {
+                    const formatted = device.charAt(0).toUpperCase() + device.slice(1);
+                    excelData.push([formatted]); 
                 });
             } else {
-                rows.push([cleanText.trim() || "Geen toestellen ingevoerd"]);
+                excelData.push(["Geen toestellen ingevoerd"]);
             }
 
             const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(rows);
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
             XLSX.utils.book_append_sheet(wb, ws, "Toestellen");
 
-            const safeDossier = (dossierNumber || 'Dossier').replace(/[^a-zA-Z0-9]/g, '_');
-            const fileName = `Toestellen_${safeDossier}.xlsx`;
-
+            const fileName = `Toestellen_${dossierNumber.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`;
             XLSX.writeFile(wb, fileName);
 
-            // Mailto link
-            const mailSubject = encodeURIComponent(`Excellijst Toestellen: ${dossierNumber}`);
-            const mailBody = encodeURIComponent(`Beste,\n\nHierbij de toestellenlijst voor dossier: ${dossierNumber}.\n\nToestellen:\n- ` + items.join('\n- '));
-            const mailUrl = `mailto:${TARGET_EMAIL}?subject=${mailSubject}&body=${mailBody}`;
-
-            addFileLogCard('Excel (.xlsx)', fileName, mailUrl);
+            addLogItem(`📊 Excel-bestand opgeslagen: <strong>${fileName}</strong> (Kijk in je <strong>Downloads-map</strong> van je telefoon).`);
         }
 
-        function addFileLogCard(type, filename, mailUrl) {
-            filesLogSection.classList.remove('hidden');
-            const card = document.createElement('div');
-            card.className = "bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between text-xs sm:text-sm";
-            card.innerHTML = `
-                <div class="truncate">
-                    <span class="font-bold text-blue-400">${type}:</span>
-                    <span class="text-slate-200 ml-1 font-medium truncate">${filename}</span>
-                </div>
-                <a href="${mailUrl}" target="_blank" class="ml-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg flex items-center space-x-1.5 flex-shrink-0">
-                    <i class="fa-solid fa-paper-plane"></i>
-                    <span>Verstuur Mail</span>
-                </a>
-            `;
-            filesList.prepend(card);
-        }
-
-        function resetAll() {
-            stopListening();
-            if (window.speechSynthesis) window.speechSynthesis.cancel();
-            
-            currentStep = Steps.IDLE;
-            dossierNumber = "";
-            fullReportText = "";
-            devicesReportText = "";
-            liveText.innerText = "Druk op start...";
-
-            stepBadgeText.textContent = "Klaar voor gebruik";
-            promptTitle.textContent = "Druk op de blauwe knop om te starten";
-            promptSub.textContent = "De app begeleidt je stap voor stap met spraak en grote knoppen.";
-            transcriptBox.classList.add('hidden');
-
-            btnStart.classList.remove('hidden');
-            recordingControls.classList.add('hidden');
-            yesNoContainer.classList.add('hidden');
-            btnConfirmDossier.classList.add('hidden');
-            updateStatus('idle', 'Inactief');
+        function addLogItem(htmlText) {
+            if (logContainer.innerText.includes('Nog geen bestanden')) {
+                logContainer.innerHTML = '';
+            }
+            const div = document.createElement('div');
+            div.className = 'log-item';
+            div.innerHTML = htmlText;
+            logContainer.prepend(div);
         }
     </script>
 </body>
