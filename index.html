@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapporten in 1-2-3</title>
+    <!-- Tailwind CSS & FontAwesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS / XLSX Library voor Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 16px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .recording-pulse {
+            animation: pulse-ring 1.5s infinite;
+        }
+
+        .btn-blue-gradient {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e3a8a 100%);
+            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);
+        }
+        .btn-blue-gradient:active {
+            transform: scale(0.97);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between p-4 sm:p-6 select-none font-sans">
+
+    <!-- Header Section -->
+    <header class="max-w-2xl w-full mx-auto flex justify-between items-center py-3 border-b border-slate-800">
+        <div class="flex items-center space-x-3">
+            <div class="btn-blue-gradient p-3 rounded-2xl">
+                <i class="fa-solid fa-microphone-lines text-2xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-blue-400">
+                    Rapporten in 1-2-3
+                </h1>
+                <p class="text-xs text-slate-400 font-medium">Handsfree Auto-Assistent</p>
+            </div>
+        </div>
+        <button onclick="resetAll()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center space-x-1.5 border border-slate-700">
+            <i class="fa-solid fa-rotate-right"></i>
+            <span>Reset</span>
+        </button>
+    </header>
+
+    <!-- Main Card Container -->
+    <main class="max-w-2xl w-full mx-auto my-auto py-4 flex flex-col items-center justify-center space-y-5">
+
+        <!-- Status & Active Step Card -->
+        <div id="statusCard" class="w-full bg-slate-900 border-2 border-slate-800 rounded-3xl p-6 sm:p-8 text-center shadow-2xl transition-all">
+            
+            <div id="stepBadge" class="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-300 text-xs font-extrabold uppercase tracking-widest mb-3">
+                <i class="fa-solid fa-car"></i>
+                <span id="stepBadgeText">Klaar voor gebruik</span>
+            </div>
+
+            <!-- Main Title Prompt -->
+            <h2 id="promptTitle" class="text-2xl sm:text-4xl font-black text-white leading-tight mb-2">
+                Druk op de blauwe knop om te starten
+            </h2>
+
+            <p id="promptSub" class="text-slate-400 text-sm sm:text-lg mb-4">
+                Spreek in of gebruik de grote touch-knoppen op je scherm.
+            </p>
+
+            <!-- Status indicator -->
+            <div id="statusIndicator" class="flex items-center justify-center space-x-2 my-2">
+                <span id="statusDot" class="w-4 h-4 rounded-full bg-slate-600"></span>
+                <span id="statusText" class="text-sm font-semibold text-slate-300">Status: Inactief</span>
+            </div>
+
+            <!-- Input & Transcript Box -->
+            <div id="transcriptBox" class="p-4 bg-slate-950 rounded-2xl border border-slate-800 text-left hidden space-y-3 mt-4">
+                <div class="flex justify-between items-center text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
+                    <span id="transcriptLabel"><i class="fa-solid fa-waveform mr-1.5 text-blue-400"></i>Gedicteerde Invoer:</span>
+                </div>
+                
+                <!-- Live Spoken Text Area -->
+                <div id="liveText" class="w-full bg-transparent text-lg sm:text-xl font-bold text-blue-200 outline-none resize-none border-none min-h-[100px] max-h-[250px] overflow-y-auto whitespace-pre-wrap">Druk op start...</div>
+            </div>
+        </div>
+
+        <!-- MAIN ACTION BUTTONS AREA -->
+        <div id="actionArea" class="w-full space-y-3">
+            
+            <!-- 1. START BUTTON -->
+            <button id="btnStart" onclick="startFlow()" class="btn-blue-gradient w-full py-8 sm:py-10 px-6 rounded-3xl text-white font-black text-2xl sm:text-4xl tracking-wide flex items-center justify-center space-x-4 cursor-pointer">
+                <i class="fa-solid fa-circle-play text-4xl sm:text-5xl"></i>
+                <span>START RAPPORT MAKEN</span>
+            </button>
+
+            <!-- 2. RECORD / FINISH BUTTONS -->
+            <div id="recordingControls" class="hidden space-y-3">
+                <button id="btnFinishReport" onclick="finishCurrentStep()" class="w-full py-7 px-6 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-2xl sm:text-3xl rounded-3xl shadow-xl flex items-center justify-center space-x-3">
+                    <i class="fa-solid fa-check-circle text-3xl"></i>
+                    <span id="btnFinishText">SLUIT AF (BEVESTIG)</span>
+                </button>
+            </div>
+
+            <!-- 3. YES / NO BUTTONS -->
+            <div id="yesNoContainer" class="grid grid-cols-2 gap-4 hidden">
+                <button onclick="handleYesNo(true)" class="py-7 sm:py-9 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-black text-3xl sm:text-4xl rounded-3xl shadow-lg flex items-center justify-center space-x-3">
+                    <i class="fa-solid fa-thumbs-up"></i>
+                    <span>JA</span>
+                </button>
+                <button onclick="handleYesNo(false)" class="py-7 sm:py-9 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white font-black text-3xl sm:text-4xl rounded-3xl shadow-lg flex items-center justify-center space-x-3">
+                    <i class="fa-solid fa-thumbs-down"></i>
+                    <span>NEE</span>
+                </button>
+            </div>
+
+            <!-- 4. DOSSIER CONFIRM BUTTON -->
+            <button id="btnConfirmDossier" onclick="confirmDossier()" class="hidden w-full py-6 px-6 btn-blue-gradient text-white font-black text-xl sm:text-2xl rounded-2xl flex items-center justify-center space-x-3">
+                <span>BEVESTIG DOSSIER & NEXT</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- GENERATED FILES LOG -->
+        <div id="filesLogSection" class="w-full bg-slate-900/90 rounded-2xl p-4 border border-slate-800 hidden">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center">
+                <i class="fa-solid fa-file-arrow-down text-blue-400 mr-2"></i> Gegenereerde Bestanden & Mail-Koppeling
+            </h3>
+            <div id="filesList" class="space-y-2"></div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-2xl w-full mx-auto text-center py-2 border-t border-slate-900 text-xs text-slate-500">
+        Bestanden versturen naar: <span class="text-slate-300 font-semibold">paulvanginnekenmobile@gmail.com</span>
+    </footer>
+
+    <!-- App Logic Script -->
+    <script>
+        const TARGET_EMAIL = "paulvanginnekenmobile@gmail.com";
+
+        const Steps = {
+            IDLE: 0,
+            DOSSIER: 1,
+            REPORT: 2,
+            ASK_EXCEL: 3,
+            EXCEL_DICTATION: 4,
+            ASK_AGAIN: 5,
+            DONE: 6
+        };
+
+        let currentStep = Steps.IDLE;
+        let dossierNumber = "";
+        let fullReportText = "";
+        let devicesReportText = "";
+        let speechRec = null;
+        let isListening = false;
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        // UI Selectors
+        const btnStart = document.getElementById('btnStart');
+        const recordingControls = document.getElementById('recordingControls');
+        const btnFinishReport = document.getElementById('btnFinishReport');
+        const btnFinishText = document.getElementById('btnFinishText');
+        const yesNoContainer = document.getElementById('yesNoContainer');
+        const btnConfirmDossier = document.getElementById('btnConfirmDossier');
+        
+        const statusCard = document.getElementById('statusCard');
+        const stepBadgeText = document.getElementById('stepBadgeText');
+        const promptTitle = document.getElementById('promptTitle');
+        const promptSub = document.getElementById('promptSub');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const transcriptBox = document.getElementById('transcriptBox');
+        const liveText = document.getElementById('liveText');
+        const filesLogSection = document.getElementById('filesLogSection');
+        const filesList = document.getElementById('filesList');
+
+        // Text-to-Speech Engine
+        function speakPrompt(text, onComplete) {
+            stopListening();
+            updateStatus('speaking', 'App spreekt...');
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'nl-NL';
+                utterance.rate = 0.95;
+
+                const voices = window.speechSynthesis.getVoices();
+                const nlVoice = voices.find(v => v.lang.toLowerCase().includes('nl'));
+                if (nlVoice) utterance.voice = nlVoice;
+
+                utterance.onend = () => { if (onComplete) onComplete(); };
+                utterance.onerror = () => { if (onComplete) onComplete(); };
+
+                window.speechSynthesis.speak(utterance);
+            } else {
+                if (onComplete) onComplete();
+            }
+        }
+
+        // Initialize Speech Recognition
+        function initSpeechRecognition() {
+            if (!SpeechRecognition) {
+                alert('Spraakherkenning wordt niet ondersteund in deze browser. Gebruik Google Chrome op Android/PC.');
+                return;
+            }
+
+            try {
+                speechRec = new SpeechRecognition();
+                speechRec.lang = 'nl-NL';
+                speechRec.continuous = true;
+                speechRec.interimResults = true;
+
+                speechRec.onstart = () => {
+                    isListening = true;
+                    updateStatus('listening', 'Microfoon actief...');
+                };
+
+                speechRec.onend = () => {
+                    isListening = false;
+                    if ([Steps.DOSSIER, Steps.REPORT, Steps.ASK_EXCEL, Steps.EXCEL_DICTATION, Steps.ASK_AGAIN].includes(currentStep)) {
+                        try { speechRec.start(); } catch(e) {}
+                    } else {
+                        updateStatus('idle', 'Inactief');
+                    }
+                };
+
+                speechRec.onresult = (event) => {
+                    let currentFinal = '';
+                    let currentInterim = '';
+
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            currentFinal += event.results[i][0].transcript + ' ';
+                        } else {
+                            currentInterim += event.results[i][0].transcript;
+                        }
+                    }
+
+                    if (currentStep === Steps.DOSSIER) {
+                        const recognizedText = (currentFinal || currentInterim).trim();
+                        if (recognizedText) {
+                            liveText.innerText = recognizedText;
+                            dossierNumber = recognizedText;
+                        }
+                    } else if (currentStep === Steps.REPORT) {
+                        if (currentFinal.trim()) {
+                            fullReportText += ' ' + currentFinal.trim();
+                        }
+                        liveText.innerText = (fullReportText + ' ' + currentInterim).trim();
+
+                        const combinedText = (fullReportText + ' ' + currentInterim).toLowerCase();
+                        if (combinedText.includes("einde rapport")) {
+                            fullReportText = fullReportText.replace(/einde rapport/gi, '').trim();
+                            finishCurrentStep();
+                        }
+                    } else if (currentStep === Steps.EXCEL_DICTATION) {
+                        if (currentFinal.trim()) {
+                            devicesReportText += ' ' + currentFinal.trim();
+                        }
+                        liveText.innerText = (devicesReportText + ' ' + currentInterim).trim();
+
+                        const combinedText = (devicesReportText + ' ' + currentInterim).toLowerCase();
+                        if (combinedText.includes("einde lijst") || combinedText.includes("einde toestellen")) {
+                            devicesReportText = devicesReportText.replace(/einde lijst|einde toestellen/gi, '').trim();
+                            finishCurrentStep();
+                        }
+                    } else if (currentStep === Steps.ASK_EXCEL) {
+                        const answer = (currentFinal || currentInterim).toLowerCase();
+                        if (answer.includes('ja') || answer.includes('wel') || answer.includes('graag')) {
+                            handleYesNo(true);
+                        } else if (answer.includes('nee') || answer.includes('neen') || answer.includes('niet')) {
+                            handleYesNo(false);
+                        }
+                    } else if (currentStep === Steps.ASK_AGAIN) {
+                        const answer = (currentFinal || currentInterim).toLowerCase();
+                        if (answer.includes('ja') || answer.includes('opnieuw')) {
+                            handleYesNo(true);
+                        } else if (answer.includes('nee') || answer.includes('stop')) {
+                            handleYesNo(false);
+                        }
+                    }
+                };
+            } catch(e) {
+                console.error("Speech Rec error:", e);
+            }
+        }
+
+        function startListening() {
+            if (speechRec && !isListening) {
+                try { speechRec.start(); } catch(e) {}
+            }
+        }
+
+        function stopListening() {
+            if (speechRec && isListening) {
+                try { speechRec.stop(); } catch(e) {}
+            }
+        }
+
+        function updateStatus(type, label) {
+            statusText.innerText = 'Status: ' + label;
+            statusDot.className = 'w-4 h-4 rounded-full ';
+            if (type === 'listening') {
+                statusDot.classList.add('bg-red-500', 'animate-pulse');
+                statusCard.classList.add('recording-pulse', 'border-red-500/60');
+            } else if (type === 'speaking') {
+                statusDot.classList.add('bg-blue-500', 'animate-pulse');
+                statusCard.classList.remove('recording-pulse', 'border-red-500/60');
+            } else {
+                statusDot.classList.add('bg-slate-600');
+                statusCard.classList.remove('recording-pulse', 'border-red-500/60');
+            }
+        }
+
+        // WORKFLOW FLOWS
+        function startFlow() {
+            btnStart.classList.add('hidden');
+            dossierNumber = "";
+            fullReportText = "";
+            devicesReportText = "";
+            liveText.innerText = "Spreek in...";
+            
+            initSpeechRecognition();
+            goToStep1Dossier();
+        }
+
+        function goToStep1Dossier() {
+            currentStep = Steps.DOSSIER;
+            stepBadgeText.textContent = "Stap 1 - Dossier / Klant";
+            promptTitle.textContent = "Geef dossiernummer of naam klant";
+            promptSub.textContent = "Spreek in of klik op bevestigen wanneer klaar.";
+            
+            transcriptBox.classList.remove('hidden');
+            btnConfirmDossier.classList.remove('hidden');
+            recordingControls.classList.add('hidden');
+            yesNoContainer.classList.add('hidden');
+
+            speakPrompt("Geef dossiernummer of naam klant", () => {
+                startListening();
+            });
+        }
+
+        function confirmDossier() {
+            stopListening();
+            if (!dossierNumber) {
+                dossierNumber = liveText.innerText.trim() || "Dossier_" + Math.floor(Math.random() * 1000);
+            }
+            goToStep2Report();
+        }
+
+        function goToStep2Report() {
+            currentStep = Steps.REPORT;
+            stepBadgeText.textContent = "Stap 2 - Dicteer Rapport (Word)";
+            promptTitle.textContent = "Dicteer me uw rapport";
+            promptSub.textContent = "Spreek af en sluit af met 'einde rapport' of klik op de groene knop.";
+
+            btnConfirmDossier.classList.add('hidden');
+            btnFinishText.textContent = "EINDE RAPPORT (WORD)";
+            recordingControls.classList.remove('hidden');
+            liveText.innerText = "[Dicteer hier het verslag voor Word...]";
+
+            speakPrompt("Dicteer me uw rapport en sluit af met de woorden einde rapport", () => {
+                startListening();
+            });
+        }
+
+        function finishCurrentStep() {
+            stopListening();
+            recordingControls.classList.add('hidden');
+
+            if (currentStep === Steps.REPORT) {
+                if (!fullReportText) {
+                    fullReportText = liveText.innerText;
+                }
+                // Generate Word Document
+                generateWordDocument();
+                // Ask for Excel Devices Step
+                goToStep3AskExcel();
+            } else if (currentStep === Steps.EXCEL_DICTATION) {
+                if (!devicesReportText) {
+                    devicesReportText = liveText.innerText;
+                }
+                // Generate Excel Document
+                generateExcelDocument();
+                // Ask for another report
+                goToStep5AskAgain();
+            }
+        }
+
+        function goToStep3AskExcel() {
+            currentStep = Steps.ASK_EXCEL;
+            stepBadgeText.textContent = "Stap 3 - Excel Toestellenlijst";
+            promptTitle.textContent = "Wilt u nu de toestellen dicteren voor Excel?";
+            promptSub.textContent = "Antwoord met JA of NEE.";
+
+            yesNoContainer.classList.remove('hidden');
+
+            speakPrompt("Heeft u een excellijst nodig van alle technische toestellen?", () => {
+                startListening();
+            });
+        }
+
+        function handleYesNo(isYes) {
+            stopListening();
+            yesNoContainer.classList.add('hidden');
+
+            if (currentStep === Steps.ASK_EXCEL) {
+                if (isYes) {
+                    goToStep4ExcelDictation();
+                } else {
+                    goToStep5AskAgain();
+                }
+            } else if (currentStep === Steps.ASK_AGAIN) {
+                if (isYes) {
+                    startFlow();
+                } else {
+                    finishAllWorkflows();
+                }
+            }
+        }
+
+        function goToStep4ExcelDictation() {
+            currentStep = Steps.EXCEL_DICTATION;
+            stepBadgeText.textContent = "Stap 3B - Dicteer Toestellen (Excel)";
+            promptTitle.textContent = "Dicteer nu alle toestellen";
+            promptSub.textContent = "Spreek de toestellen in (bv. per zin of met het woord 'komma'). Zeg 'einde lijst' als u klaar bent.";
+
+            devicesReportText = "";
+            liveText.innerText = "[Dicteer hier alle toestellen/apparaten...]";
+            btnFinishText.textContent = "EINDE TOESTELLEN (EXCEL)";
+            recordingControls.classList.remove('hidden');
+
+            speakPrompt("Dicteer nu alle toestellen en sluit af met einde lijst", () => {
+                startListening();
+            });
+        }
+
+        function goToStep5AskAgain() {
+            currentStep = Steps.ASK_AGAIN;
+            stepBadgeText.textContent = "Afronding";
+            promptTitle.textContent = "Wil u nog een rapport dicteren?";
+            promptSub.textContent = "Druk op JA of NEE.";
+
+            yesNoContainer.classList.remove('hidden');
+
+            speakPrompt("Wil u nog een rapport dicteren?", () => {
+                startListening();
+            });
+        }
+
+        function finishAllWorkflows() {
+            currentStep = Steps.DONE;
+            stopListening();
+
+            stepBadgeText.textContent = "Afgerond";
+            promptTitle.textContent = "Rapportage voltooid!";
+            promptSub.textContent = "Alle bestanden zijn geëxporteerd en klaar voor e-mail.";
+            
+            yesNoContainer.classList.add('hidden');
+            btnStart.classList.remove('hidden');
+
+            speakPrompt("Rapportage is volledig afgerond. Veilige rit gewenst.");
+        }
+
+        // GENERATE WORD DOCUMENT (.doc)
+        function generateWordDocument() {
+            const safeDossier = (dossierNumber || 'Dossier').replace(/[^a-zA-Z0-9]/g, '_');
+            const fileName = `Rapport_${safeDossier}.doc`;
+            const timestamp = new Date().toLocaleString('nl-BE');
+
+            const wordContent = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head><meta charset='utf-8'><title>Rapport - ${dossierNumber}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 24px; line-height: 1.6; color: #0f172a; }
+                    h1 { color: #1e3a8a; border-bottom: 2px solid #1e3a8a; padding-bottom: 8px; }
+                    .meta { font-size: 14px; color: #475569; margin-bottom: 24px; }
+                    .box { background-color: #f8fafc; padding: 16px; border-left: 4px solid #2563eb; font-size: 15px; }
+                </style>
+                </head>
+                <body>
+                    <h1>TECHNISCH RAPPORT</h1>
+                    <div class="meta">
+                        <p><strong>Dossier / Klant:</strong> ${dossierNumber}</p>
+                        <p><strong>Datum:</strong> ${timestamp}</p>
+                    </div>
+                    <h2>Gedicteerd Verslag:</h2>
+                    <div class="box">${fullReportText.replace(/\n/g, '<br/>')}</div>
+                </body>
+                </html>
+            `;
+
+            const blob = new Blob(['\ufeff' + wordContent], { type: 'application/msword;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Mailto link
+            const mailSubject = encodeURIComponent(`Rapport Word: ${dossierNumber}`);
+            const mailBody = encodeURIComponent(`Beste,\n\nHierbij het rapport voor dossier: ${dossierNumber}.\n\nTekst:\n${fullReportText}`);
+            const mailUrl = `mailto:${TARGET_EMAIL}?subject=${mailSubject}&body=${mailBody}`;
+
+            addFileLogCard('Word (.doc)', fileName, mailUrl);
+        }
+
+        // GENERATE EXCEL DOCUMENT (.xlsx) - Direct placement in Column A line-by-line
+        function generateExcelDocument() {
+            // Strip initiële antwoordwoorden zoals "ja", "ja graag", "ok"
+            let cleanText = devicesReportText
+                .replace(/^(?:ja|ja graag|oké|oke|graag)\b/gi, '')
+                .trim();
+
+            // Opsplitsen op uitgesproken leestekens en bekende scheidingswoorden
+            const items = cleanText
+                .split(/(?:[,.!?;\n]+|\b(?:komma|punt|nieuwe regel|volgende|volgend toestel|en|ook)\b)/gi)
+                .map(item => item.trim())
+                .filter(item => item.length > 1 && !['einde', 'lijst', 'toestellen', 'rapport', 'ja'].includes(item.toLowerCase()));
+
+            const rows = [["Technische Toestellen (Kolom A)"]];
+            
+            if (items.length > 0) {
+                items.forEach(dev => {
+                    const formatted = dev.charAt(0).toUpperCase() + dev.slice(1);
+                    rows.push([formatted]); // Elk item op een eigen rij in Kolom A
+                });
+            } else {
+                rows.push([cleanText.trim() || "Geen toestellen ingevoerd"]);
+            }
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            XLSX.utils.book_append_sheet(wb, ws, "Toestellen");
+
+            const safeDossier = (dossierNumber || 'Dossier').replace(/[^a-zA-Z0-9]/g, '_');
+            const fileName = `Toestellen_${safeDossier}.xlsx`;
+
+            XLSX.writeFile(wb, fileName);
+
+            // Mailto link
+            const mailSubject = encodeURIComponent(`Excellijst Toestellen: ${dossierNumber}`);
+            const mailBody = encodeURIComponent(`Beste,\n\nHierbij de toestellenlijst voor dossier: ${dossierNumber}.\n\nToestellen:\n- ` + items.join('\n- '));
+            const mailUrl = `mailto:${TARGET_EMAIL}?subject=${mailSubject}&body=${mailBody}`;
+
+            addFileLogCard('Excel (.xlsx)', fileName, mailUrl);
+        }
+
+        function addFileLogCard(type, filename, mailUrl) {
+            filesLogSection.classList.remove('hidden');
+            const card = document.createElement('div');
+            card.className = "bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between text-xs sm:text-sm";
+            card.innerHTML = `
+                <div class="truncate">
+                    <span class="font-bold text-blue-400">${type}:</span>
+                    <span class="text-slate-200 ml-1 font-medium truncate">${filename}</span>
+                </div>
+                <a href="${mailUrl}" target="_blank" class="ml-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg flex items-center space-x-1.5 flex-shrink-0">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>Verstuur Mail</span>
+                </a>
+            `;
+            filesList.prepend(card);
+        }
+
+        function resetAll() {
+            stopListening();
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
+            
+            currentStep = Steps.IDLE;
+            dossierNumber = "";
+            fullReportText = "";
+            devicesReportText = "";
+            liveText.innerText = "Druk op start...";
+
+            stepBadgeText.textContent = "Klaar voor gebruik";
+            promptTitle.textContent = "Druk op de blauwe knop om te starten";
+            promptSub.textContent = "De app begeleidt je stap voor stap met spraak en grote knoppen.";
+            transcriptBox.classList.add('hidden');
+
+            btnStart.classList.remove('hidden');
+            recordingControls.classList.add('hidden');
+            yesNoContainer.classList.add('hidden');
+            btnConfirmDossier.classList.add('hidden');
+            updateStatus('idle', 'Inactief');
+        }
+    </script>
+</body>
+</html>
